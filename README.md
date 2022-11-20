@@ -1,7 +1,7 @@
 # errormess_infra
 errormess Infra repository
-#Task: SSH
 
+#Task: SSH
 ssh -i ~/.ssh/appuser -J appuser@158.160.32.24 appuser@10.128.0.17
 
 Host someinternalhost 
