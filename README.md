@@ -87,7 +87,9 @@ packer validate ./ubuntu16.json
 packer build ./ubuntu16.json
 ```
 Необходимо добавить в скрипт **install_ruby.sh**, строчку после **apt update**
+
 6. Проверяем работу нашего образа
+
 7. Создаем файлы с переменными **variables.json** и **variables.json.example**
 ```json
 {
