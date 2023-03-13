@@ -61,7 +61,7 @@ resource "yandex_compute_instance" "app" {
   }
 ...
 }
-```
+
 и пересоздаем
 ```
 terraform destroy -auto-approve
@@ -78,6 +78,7 @@ output "external_ip_address_app" {
   value = yandex_compute_instance.app.network_interface.0.nat_ip_address
 }
 ```
+
 проверяем
 ```
 terraform refresh
@@ -96,8 +97,8 @@ external_ip_address_app = 1.2.3.4
     provisioner "remote-exec" {
     script = "files/deploy.sh"
   }
-  ```
-  для подключения используем  connection
+ 
+  Для подключения используем  connection
   ```
     connection {
     type  = "ssh"
