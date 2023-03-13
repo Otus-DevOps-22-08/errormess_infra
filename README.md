@@ -1,10 +1,8 @@
 # errormess_infra
 errormess Infra repository
-
 ---
 ## Знакомство с Terraform
 #### Выполненные работы
-
 1. Создаем ветку **terraform-1** и устанавливаем дистрибутив Terraform
 ```bash
 git checkout -b terraform-1
@@ -27,7 +25,6 @@ cat .gitignore
 .terraform/
 ...
 ```
-
 3. Редактируем **main.tf** и проводим инцициализацию
 ```
 cat main.tf
@@ -61,7 +58,6 @@ resource "yandex_compute_instance" "app" {
   }
 ...
 }
-
 и пересоздаем
 ```
 terraform destroy -auto-approve
@@ -78,7 +74,6 @@ output "external_ip_address_app" {
   value = yandex_compute_instance.app.network_interface.0.nat_ip_address
 }
 ```
-
 проверяем
 ```
 terraform refresh
@@ -138,7 +133,6 @@ cloud_id                 = var.cloud_id
 terraform destroy -auto-approve
 terraform apply -auto-approve
 ```
-
 #### Задание со ⭐⭐
 1. Создаем файл **lb.tf**
 2. Первым делом нужно  создать *target group*, которую мы позже подключим к балансировщику
@@ -188,7 +182,6 @@ resource "yandex_lb_network_load_balancer" "lb" {
 output "loadbalancer_ip_address" {
   value = yandex_lb_network_load_balancer.lb.listener.*.external_address_spec[0].*.address
 }
-
 ```
 и собираем
 ```bash
@@ -249,11 +242,8 @@ resource "yandex_compute_instance" "app" {
 terraform plan; terraform apply -auto-approve
 ```
 ---
-
 ## Подготовка образов с помощью packer
-
 #### Выполненные работы
-
 1. Создаем новую ветку **packer-base** и переносим скрипты из предыдущего ДЗ в **config-scripts**
 2. Устанавливаем packer
 3. Создаем сервисный аккаунт в **yc**
@@ -315,9 +305,7 @@ packer validate ./ubuntu16.json
 packer build ./ubuntu16.json
 ```
 Необходимо добавить в скрипт **install_ruby.sh**, строчку после **apt update**
-
 6. Проверяем работу нашего образа
-
 7. Создаем файлы с переменными **variables.json** и **variables.json.example**
 ```json
 {
@@ -327,7 +315,6 @@ packer build ./ubuntu16.json
 }
 ```
 8. Добвляем **variables.json** в **.gitignore**
-
 ## Работы с SSH / VPN
 #### Выполненные работы
 #Task: SSH
@@ -344,14 +331,12 @@ Host bastion
         HostName 158.160.32.24
         User appuser
 ```
-
 #Task VPN
 ```
 https://158.160.32.24
 bastion_IP = 158.160.32.24
 someinternalhost_IP = 10.128.0.17
 ```
-
 #Task reddit-app
 ```
 testapp_IP = 158.160.34.149
