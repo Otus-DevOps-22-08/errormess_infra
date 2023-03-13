@@ -97,7 +97,7 @@ external_ip_address_app = 1.2.3.4
     provisioner "remote-exec" {
     script = "files/deploy.sh"
   }
- 
+  ```
   Для подключения используем  connection
   ```
     connection {
