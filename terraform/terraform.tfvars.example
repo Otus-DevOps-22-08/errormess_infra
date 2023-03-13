@@ -1,0 +1,10 @@
+cloud_id         = "b1gugvdk2"
+token            = "Ub2GaZs_LDS0UQvigAk-UF4dhavf_xDg"
+folder_id        = "b1fr2843h67kop"
+zone             = "ru-central1-a"
+image_id         = "csmudautbbk62q5"
+public_key_path  = "~/.ssh/id_123.pub"
+private_key_path = "~/.ssh/id_321"
+subnet_id        = "e9br5m142p6rj"
+#service_account_key_file = "key.json"
+instances	 = 2
