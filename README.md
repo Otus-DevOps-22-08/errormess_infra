@@ -1,6 +1,229 @@
 # errormess_infra
 errormess Infra repository
 ---
+---
+##  Работа с Terraform, принципы организации инфраструктурного кода и работа над инфраструктурой в команде.
+#### Выполненные работы:
+
+1. Создаем ветку **terraform-2** и подичищаем результат заданий со звездочкой:
+```bash
+git checkout -b terraform-2; git mv terraform/lb.tf terraform/files/
+```
+2. Создадим IP для внешнего ресурса с поомщью **yandex_vpc_network** и **yandex_vpc_subnet**, для этого добавляем в **main.tf** следующие строки:
+```
+resource "yandex_vpc_network" "app-network" {
+  name = "reddit-app-network"
+}
+
+resource "yandex_vpc_subnet" "app-subnet" {
+  name           = "reddit-app-subnet"
+  zone           = "ru-central1-a"
+  network_id     = "${yandex_vpc_network.app-network.id}"
+  v4_cidr_blocks = ["192.168.10.0/24"]
+}
+```
+3. Добавляем упоминание о созданных сетевых ресурсах в код создания инстанса:
+```
+  network_interface {
+    subnet_id = yandex_vpc_subnet.app-subnet.id
+    nat = true
+  }
+```
+4. Пересоздаем и проверяем как работают неявные зависимости:
+```bash
+terraform destroy --auto-approve; terraform plan; terraform apply --auto-approve
+```
+5. Создаем 2 новых шаблона для packer **app.json** и **db.json** на базе уже имеющегося **ubuntu16.json**
+```
+cp packer/ubuntu16.json packer/app.json; cp packer/ubuntu16.json packer/db.json
+```
+редактируем полученные файлы, оставляя каждом необходимый провижионер и поменян некоторые параметры
+```
+...
+            "image_name": "reddit-app-base-{{timestamp}}",
+            "image_family": "reddit-app-base",
+...
+            "disk_name": "reddit-app-base",
+...
+```
+6. Запекаем образы
+```bash
+packer validate -var-file=./variables.json ./app.json
+packer build -var-file=./variables.json ./app.json
+packer validate -var-file=./variables.json ./db.json
+packer build -var-file=./variables.json ./db.json
+```
+7. Разбиваем **main.tf** на части создав **app.tf** и **db.tf**, а так же выносим в отдельный файл описание сети **vpc.tf**.
+Для начала определим новые переменные:
+```
+variable app_disk_image {
+  description = "disk image for reddit app"
+  default     = "reddit-app-base"
+}
+variable db_disk_image {
+  description = "disk image for mongodb"
+  default     = "reddit-db-base"
+```
+и обозначим их
+```
+app_disk_image            = "reddit-app-base"
+db_disk_image             = "reddit-db-base"
+```
+вынесем описание ресурсов например **app.tf**
+```
+resource "yandex_compute_instance" "app" {
+  name = "reddit-app"
+
+  labels = {
+    tags = "reddit-app"
+  }
+  resources {
+    cores  = 2
+    memory = 2
+  }
+
+  boot_disk {
+    initialize_params {
+      image_id = var.app_disk_image
+    }
+  }
+
+  network_interface {
+    subnet_id = yandex_vpc_subnet.app-subnet.id
+    nat = true
+  }
+
+  metadata = {
+  ssh-keys = "ubuntu:${file(var.public_key_path)}"
+  }
+}
+```
+оставив в **main.tf** только
+```
+provider "yandex" {
+  version                  = "~> 0.43"
+  service_account_key_file = var.service_account_key_file
+  cloud_id                 = var.cloud_id
+  folder_id                = var.folder_id
+  zone                     = var.zone
+}
+```
+правим **outputs.tf**
+```
+output "external_ip_address_app" {
+  value = yandex_compute_instance.app.network_interface.0.nat_ip_address
+}
+output "external_ip_address_db" {
+  value = yandex_compute_instance.db.network_interface.0.nat_ip_address
+}
+```
+8. Проверяем работу
+```bash
+terraform destroy --auto-approve; terraform plan; terraform apply --auto-approve
+```
+9. Создаем модульную инфраструктуру. Создаем папку **modules** внутри папки  **terraform**
+```
+mkdir modules
+```
+теперь на необходимо создать папки для наших модулей
+```
+mkdir app; mkdir db
+```
+и в кажддом из модулей создаем знакомую нам структуру из **main.tf**, **outputs.ft** и **variables.tf**
+```
+variable public_key_path {
+  description = "Path to the public key used for ssh access"
+}
+  variable db_disk_image {
+  description = "Disk image for reddit db"
+  default = "reddit-db-base"
+}
+variable subnet_id {
+description = "Subnets for modules"
+}
+```
+outputs.tf
+```
+output "external_ip_address_app" {
+  value = yandex_compute_instance.app.network_interface.0.nat_ip_address
+}
+```
+удаляем из дириктории **app.tf**, **db.tf** и **vpc.tf**
+```
+rm app.tf; rm db.tf; rm vpc.tf
+```
+укащываем в **main.tf** исользование модулей
+```
+module "app" {
+  source          = "./modules/app"
+  public_key_path = var.public_key_path
+  app_disk_image  = var.app_disk_image
+  subnet_id       = var.subnet_id
+}
+
+module "db" {
+  source          = "./modules/db"
+  public_key_path = var.public_key_path
+  db_disk_image   = var.db_disk_image
+  subnet_id       = var.subnet_id
+}
+```
+правим **outputs.tf**
+```
+output "external_ip_address_app" {
+  value = module.app.external_ip_address_app
+}
+output "external_ip_address_db" {
+  value = module.db.external_ip_address_db
+}
+```
+загружаем модули
+```
+terraform get
+```
+и пробуем все собрать
+```
+terraform plan; terraform apply --auto-approve
+```
+10. Переиспользование модулей. Для этого необходимо создать среды **prod** и **stage**
+```
+mkdir prod; mkdir stage
+```
+копируем в эти каталоги наши основные рабочией файлы
+```
+cp main.tf prod/; cp outputs.tf prod/; cp variables.tf prod/; cp terraform.tfvars prod/
+```
+анологично делаем и для **stage**,  и корректируем **main.tf**
+```
+provider "yandex" {
+  service_account_key_file = var.service_account_key_file
+  cloud_id  = var.cloud_id
+  folder_id = var.folder_id
+  zone      = var.zone
+}
+module "app" {
+  source          = "../modules/app"
+  public_key_path = var.public_key_path
+  app_disk_image  = var.app_disk_image
+  subnet_id       = var.subnet_id
+}
+
+module "db" {
+  source          = "../modules/db"
+  public_key_path = var.public_key_path
+  db_disk_image   = var.db_disk_image
+  subnet_id       = var.subnet_id
+}
+```
+корректируем синтаксис
+```
+terraform fmt
+```
+и проверяем на каждом стенде
+```
+terraform init; terraform apply --auto-approve
+```
+
 ## Знакомство с Terraform
 #### Выполненные работы
 1. Создаем ветку **terraform-1** и устанавливаем дистрибутив Terraform

@@ -1,0 +1,12 @@
+cloud_id         = "b1gu"
+token            = "y0_AgAAAUb2GaZs_LDS0UQvigAk-UF4dhavf_xDg"
+folder_id        = "b1gfr2843h67kop"
+zone             = "ru-central1-a"
+image_id         = "fdcsmudautbbk62q5"
+public_key_path  = "~/.ssh/id_rsa.pub"
+private_key_path = "~/.ssh/id_rsa"
+subnet_id        = "e9br5mv0lfip6rj"
+#service_account_key_file = "key.json"
+instances      = 1
+app_disk_image = "f20s7bqv4qsm29"
+db_disk_image  = "ffl5dfnc705mjn"

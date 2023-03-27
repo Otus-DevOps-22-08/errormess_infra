@@ -6,4 +6,4 @@ image_id         = "csmudautbbk62q5"
 public_key_path  = "~/.ssh/ubuntu.pub"
 private_key_path = "~/.ssh/ubuntu"
 subnet_id        = "e9br5m142p6rj"
-instances = 2
+instances = 1
